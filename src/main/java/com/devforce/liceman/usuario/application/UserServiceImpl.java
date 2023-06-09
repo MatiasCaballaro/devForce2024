@@ -5,6 +5,7 @@ import com.devforce.liceman.usuario.domain.repository.UserRepository;
 import com.devforce.liceman.usuario.infrastructure.dto.UserRequestDTO;
 import com.devforce.liceman.usuario.infrastructure.dto.UserResponseDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -42,6 +43,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponseDTO updateOwnUser(UserRequestDTO userRequestDTO) {
+        //TODO: Logica para que se verifique que el mail nuevo no exista anteriormente,
+        // si existe el id en la BD debe concidir
+        //TODO: Agregar el annotation para que sea unico el mail
         User loggedUser = getLoggedUser();
         UpdateUserData(userRequestDTO, loggedUser);
         return MapperToUserDTO(userRepository.save(loggedUser));
