@@ -3,8 +3,6 @@ package com.devforce.liceman.security.infrastructure.controller;
 import com.devforce.liceman.security.application.AuthenticationService;
 import com.devforce.liceman.security.infrastructure.dto.AuthenticationRequest;
 import com.devforce.liceman.security.infrastructure.dto.AuthenticationResponse;
-import com.devforce.liceman.usuario.infrastructure.dto.UserRequestDTO;
-import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -21,29 +19,18 @@ import java.io.IOException;
 @RequiredArgsConstructor
 public class AuthenticationController {
 
-  private final AuthenticationService service;
+    private final AuthenticationService authenticationService;
 
-  @PostMapping("/register")
-  @Hidden
-  public ResponseEntity<AuthenticationResponse> register(
-      @RequestBody UserRequestDTO request
-  ) {
-    return ResponseEntity.ok(service.register(request));
-  }
-  @PostMapping("/authenticate")
-  public ResponseEntity<AuthenticationResponse> authenticate(
-      @RequestBody AuthenticationRequest request
-  ) {
-    return ResponseEntity.ok(service.authenticate(request));
-  }
 
-  @PostMapping("/refresh-token")
-  public void refreshToken(
-      HttpServletRequest request,
-      HttpServletResponse response
-  ) throws IOException {
-    service.refreshToken(request, response);
-  }
+    @PostMapping("/authenticate")
+    public ResponseEntity<AuthenticationResponse> authenticate (@RequestBody AuthenticationRequest request) {
+        return ResponseEntity.ok(authenticationService.authenticate(request));
+    }
+
+    @PostMapping("/refresh-token")
+    public void refreshToken (HttpServletRequest request, HttpServletResponse response) throws IOException {
+        authenticationService.refreshToken(request, response);
+    }
 
 
 }

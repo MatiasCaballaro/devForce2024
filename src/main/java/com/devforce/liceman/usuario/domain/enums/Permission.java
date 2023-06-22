@@ -19,10 +19,11 @@ public enum Permission {
     ADMIN_READ("admin:read"),
     ADMIN_UPDATE("admin:update"),
     ADMIN_CREATE("admin:create"),
-    ADMIN_DELETE("admin:delete")
+    ADMIN_DELETE("admin:delete"),
 
-
-    ;
+    SOLICITUD_CREATE("solicitud:create"),
+    SOLICITUD_UPDATE("solicitud:update"),
+    SOLICITUD_READ("solicitud:read");
 
     @Getter
     private final String permission;
