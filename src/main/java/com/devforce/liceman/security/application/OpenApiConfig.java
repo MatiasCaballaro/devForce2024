@@ -17,7 +17,9 @@ import io.swagger.v3.oas.annotations.servers.Server;
                         //email = "matias.caballaro@gmail.com",
                         url = "https://github.com/MatiasCaballaro/devForce2024"
                 ),
-                description = "Documentation for Liceman project @devForce - 2024 practices ",
+                description = "Documentation for Liceman project @devForce - 2024 practices.<br><br>"
+                + "Solicitudes can have these status = ",
+
                 title = "Liceman Documentation",
                 version = "1.0",
                 license = @License(

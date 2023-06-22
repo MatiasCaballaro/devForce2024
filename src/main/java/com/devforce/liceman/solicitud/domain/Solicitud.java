@@ -1,15 +1,12 @@
 package com.devforce.liceman.solicitud.domain;
 
-import com.devforce.liceman.solicitud.domain.enums.Area;
+import com.devforce.liceman.usuario.domain.enums.Area;
 import com.devforce.liceman.solicitud.domain.enums.Status;
 import com.devforce.liceman.usuario.domain.User;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Data
 @Builder
@@ -18,7 +15,6 @@ import java.time.LocalDate;
 @Entity
 @Table(name = "solicitudes")
 public class Solicitud {
-    //TODO: CHEQUEAR NOMBRES
 
     @Id
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -27,37 +23,40 @@ public class Solicitud {
     @Enumerated(EnumType.STRING)
     private Area area;
 
-    //TODO: Hacer la relación ManyToOne
-    @Column(name = "user_id")
-    private Long userId;
-
-    @Column(name = "mentor_id")
-    private Long mentorId;
-
-    @Column(name = "admin_id")
-    private Long adminId;
-
     @Column(name = "creation_date")
-    private LocalDate creationDate;
+    private LocalDateTime creationDate;
 
     @Column(name = "approved_date")
-    private LocalDate approvedDate;
+    private LocalDateTime approvedDate;
 
     @Column(name = "end_date")
-    private LocalDate endDate;
+    private LocalDateTime endDate;
 
     private Integer days;
 
     @Enumerated(EnumType.STRING)
     private Status status;
 
+    //TODO: Ver si hacemos List<String> del comentario, quiza hacer una clase Comentario
     @Column(name = "user_comment")
     private String userComment;
 
+    //TODO: Ver si hacemos List<String> del comentario, quiza hacer una clase Comentario
     @Column(name = "mentor_comment")
     private String mentorComment;
-    //TODO: Ver si hacemos List<String> del comentario, quiza hacer una clase Comentario
 
     private String link;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "user_id")
+    private User userId;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "mentor_id", referencedColumnName = "id")
+    private User mentorId;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "admin_id", referencedColumnName = "id")
+    private User adminId;
 
 }
