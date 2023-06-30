@@ -1,4 +1,4 @@
-package com.devforce.liceman.shared.application;
+package com.devforce.liceman.shared.application.mappers;
 
 import com.devforce.liceman.solicitud.domain.Solicitud;
 import com.devforce.liceman.solicitud.infrastructure.dto.SolicitudDTO;

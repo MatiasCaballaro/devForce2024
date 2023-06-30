@@ -5,8 +5,9 @@ import com.devforce.liceman.security.domain.token.Token;
 import com.devforce.liceman.security.domain.token.TokenJPARepository;
 import com.devforce.liceman.security.domain.token.TokenType;
 import com.devforce.liceman.security.infrastructure.dto.AuthenticationResponse;
-import com.devforce.liceman.shared.application.MapperUtils;
-import com.devforce.liceman.shared.application.UserUtils;
+import com.devforce.liceman.shared.application.loggeduser.LoggedUser;
+import com.devforce.liceman.shared.application.loggeduser.UserContext;
+import com.devforce.liceman.shared.application.mappers.MapperUtils;
 import com.devforce.liceman.shared.exceptions.EmailAlreadyExistsException;
 import com.devforce.liceman.usuario.domain.User;
 import com.devforce.liceman.usuario.domain.enums.Role;
@@ -28,8 +29,6 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
     private final TokenJPARepository tokenJPARepository;
-
-    private final UserUtils userUtils;
 
     private final MapperUtils mapperUtils;
 
@@ -94,9 +93,10 @@ public class UserServiceImpl implements UserService {
     }
 
     //El método UpdateOwnUser no involucra el cambio de mail
+    @LoggedUser
     @Override
     public UserResponseDTO updateOwnUser (UserRequestDTO userRequestDTO) {
-        User loggedUser = userUtils.getLoggedUser();
+        User loggedUser = UserContext.getUser();
         UpdateUserData(userRequestDTO, loggedUser);
         return mapperUtils.MapperToUserDTO(userRepository.save(loggedUser));
     }

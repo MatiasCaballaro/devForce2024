@@ -36,7 +36,7 @@ public class UserController {
     @PreAuthorize("hasAuthority('user:read')")
     public ResponseEntity<ResponseDTO> getUserByID (@PathVariable Long id) {
         return ResponseEntity.ok().body(
-                new ResponseDTO(true, "Usuario Creado", userService.getUserById(id)));
+                new ResponseDTO(true, "Usuario Obtenido", userService.getUserById(id)));
     }
 
     @Operation(description = "Crea un usuario a partir de un UserRequestDTO")
@@ -45,7 +45,7 @@ public class UserController {
     public ResponseEntity<ResponseDTO> createUser (@RequestBody UserRequestDTO request) {
         try {
             return ResponseEntity.ok().body(
-                    new ResponseDTO(true, "Usuario Creado", userService.createUser(request)));
+                    new ResponseDTO(true, "Usuario Creado!", userService.createUser(request)));
         } catch (EmailAlreadyExistsException e) {
             return ResponseEntity.badRequest().body(
                     new ResponseDTO(false, e.getMessage(), null));

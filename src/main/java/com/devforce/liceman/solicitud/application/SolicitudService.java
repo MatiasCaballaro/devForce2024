@@ -1,22 +1,24 @@
 package com.devforce.liceman.solicitud.application;
 
 import com.devforce.liceman.solicitud.domain.Solicitud;
-import com.devforce.liceman.solicitud.infrastructure.dto.*;
+import com.devforce.liceman.solicitud.infrastructure.dto.SolicitudCreationRequestDTO;
+import com.devforce.liceman.solicitud.infrastructure.dto.UpdateAdminSolicitudDTO;
+import com.devforce.liceman.solicitud.infrastructure.dto.UpdateMentorSolicitudDTO;
+import com.devforce.liceman.solicitud.infrastructure.dto.UpdateUserSolicitudDTO;
 
 import java.util.List;
-import java.util.Optional;
 
 public interface SolicitudService {
 
     Solicitud createSolicitud (SolicitudCreationRequestDTO solicitudCreationRequestDTO);
 
-    List<SolicitudDTO> getSolicitudes ();
+    List<Solicitud> getSolicitudes ();
 
-    Optional<SolicitudDTO> getSolicitudById (Long id) throws IllegalAccessException;
+    Solicitud getSolicitudById (Long id) throws IllegalAccessException;
 
-    SolicitudDTO mentorUpdateSolicitud (Long id, UpdateMentorSolicitudDTO updateMentorSolicitudDTO);
+    Solicitud mentorUpdateSolicitud (Long id, UpdateMentorSolicitudDTO updateMentorSolicitudDTO) throws Exception;
 
-    SolicitudDTO userUpdateSolicitud (Long id, UpdateUserSolicitudDTO updateUserSolicitudDTO);
+    Solicitud userUpdateSolicitud (Long id, UpdateUserSolicitudDTO updateUserSolicitudDTO) throws Exception;
 
-    SolicitudDTO adminUpdateSolicitud (Long id, UpdateAdminSolicitudDTO updateAdminSolicitudDTO);
+    Solicitud adminUpdateSolicitud (Long id, UpdateAdminSolicitudDTO updateAdminSolicitudDTO) throws Exception;
 }

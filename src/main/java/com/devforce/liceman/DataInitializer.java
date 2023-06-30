@@ -5,6 +5,7 @@ import com.devforce.liceman.solicitud.domain.Solicitud;
 import com.devforce.liceman.solicitud.domain.enums.Status;
 import com.devforce.liceman.solicitud.domain.repository.SolicitudRepository;
 import com.devforce.liceman.solicitud.infrastructure.dto.SolicitudCreationRequestDTO;
+import com.devforce.liceman.solicitud.infrastructure.dto.UpdateUserSolicitudDTO;
 import com.devforce.liceman.usuario.application.UserService;
 import com.devforce.liceman.usuario.domain.enums.Area;
 import com.devforce.liceman.usuario.domain.repository.UserRepository;
@@ -155,7 +156,7 @@ public class DataInitializer implements CommandLineRunner {
                     .days(30)
                     .status(Status.PENDIENTE_USER)
                     .build();
-            System.out.println("Solicitud1 Actualizada por Mentor1" + updateSolicitud(1L,solicitudMentor1,mentor1));
+            System.out.println("Solicitud1 Actualizada por Mentor1" + updateSolicitudMentor(1L,solicitudMentor1,mentor1));
 
 
             UpdateMentorSolicitudDTO solicitudMentor2= UpdateMentorSolicitudDTO.builder()
@@ -165,7 +166,7 @@ public class DataInitializer implements CommandLineRunner {
                     .days(45)
                     .status(Status.PENDIENTE_USER)
                     .build();
-            System.out.println("Solicitud1 Actualizada por Mentor1" + updateSolicitud(2L,solicitudMentor2,mentor1));
+            System.out.println("Solicitud1 Actualizada por Mentor1" + updateSolicitudMentor(2L,solicitudMentor2,mentor1));
 
 
             System.out.println("================================================================================");
@@ -173,6 +174,10 @@ public class DataInitializer implements CommandLineRunner {
             System.out.println("================================================================================");
 
             //TODO crear
+            UpdateUserSolicitudDTO solicitudUser1= UpdateUserSolicitudDTO.builder()
+                    .status(Status.PENDIENTE_ADMIN)
+                    .build();
+            System.out.println("Solicitud1 Actualizada por User1" + UpdateUserSolicitudDTO(1L,solicitudUser1));
 
 
             System.out.println("================================================================================");
@@ -196,7 +201,7 @@ public class DataInitializer implements CommandLineRunner {
         return solicitudRepository.save(newSolicitud);
     }
 
-    private Solicitud updateSolicitud (Long id, UpdateMentorSolicitudDTO request, UserRequestDTO userDTO) {
+    private Solicitud updateSolicitudMentor (Long id, UpdateMentorSolicitudDTO request, UserRequestDTO userDTO) {
         try {
             Solicitud solicitud = solicitudRepository.findById(id).orElseThrow(SolicitudNotExistsException::new);
             solicitud.setMentorId(userRepository.findByEmail(userDTO.getEmail()).orElseThrow(NoSuchElementException::new));
@@ -208,6 +213,16 @@ public class DataInitializer implements CommandLineRunner {
             } else{
                 solicitud.setStatus(RECHAZADA);
             }
+            return solicitudRepository.save(solicitud);
+        } catch (Exception e) {
+            throw new SolicitudNotExistsException();
+        }
+    }
+
+    private Solicitud UpdateUserSolicitudDTO (Long id,  UpdateUserSolicitudDTO request) {
+        try {
+            Solicitud solicitud = solicitudRepository.findById(id).orElseThrow(SolicitudNotExistsException::new);
+            solicitud.setStatus(request.getStatus());
             return solicitudRepository.save(solicitud);
         } catch (Exception e) {
             throw new SolicitudNotExistsException();

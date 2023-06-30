@@ -1,15 +1,14 @@
 package com.devforce.liceman.solicitud.application;
 
-import com.devforce.liceman.shared.application.MapperUtils;
-import com.devforce.liceman.shared.application.UserUtils;
+import com.devforce.liceman.shared.application.loggeduser.LoggedUser;
+import com.devforce.liceman.shared.application.loggeduser.UserContext;
 import com.devforce.liceman.shared.exceptions.SolicitudNotExistsException;
 import com.devforce.liceman.solicitud.domain.Solicitud;
 import com.devforce.liceman.solicitud.domain.enums.Status;
 import com.devforce.liceman.solicitud.domain.repository.SolicitudRepository;
 import com.devforce.liceman.solicitud.infrastructure.dto.*;
 import com.devforce.liceman.usuario.domain.User;
-import com.devforce.liceman.usuario.domain.enums.Area;
-import com.devforce.liceman.usuario.domain.enums.Role;
+import com.devforce.liceman.usuario.domain.enums.*;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,8 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static com.devforce.liceman.solicitud.domain.enums.Status.*;
 
@@ -27,149 +24,160 @@ import static com.devforce.liceman.solicitud.domain.enums.Status.*;
 public class SolicitudServiceImpl implements SolicitudService {
 
     public final SolicitudRepository solicitudRepository;
-    public final MapperUtils mapperUtils;
-    public final UserUtils userUtils;
     public static final Logger logger = LoggerFactory.getLogger(SolicitudServiceImpl.class);
 
+    @LoggedUser
     @Override
     public Solicitud createSolicitud (SolicitudCreationRequestDTO solicitudCreationRequestDTO) {
         Solicitud newSolicitud = new Solicitud();
         newSolicitud.setArea(solicitudCreationRequestDTO.getArea());
         newSolicitud.setUserComment(solicitudCreationRequestDTO.getUserComment());
-        newSolicitud.setUserId(userUtils.getLoggedUser());
+        newSolicitud.setUserId(UserContext.getUser());
         newSolicitud.setCreationDate(LocalDateTime.now());
         newSolicitud.setStatus(Status.PENDIENTE_MENTOR);
         return solicitudRepository.save(newSolicitud);
     }
 
+    @LoggedUser
     @Override
-    public List<SolicitudDTO> getSolicitudes (){
-        User user = userUtils.getLoggedUser();
-        Role role = user.getRole();
-
-        return getSolicitudesAccordingToRole(user, role);
+    public List<Solicitud> getSolicitudes () {
+        return getSolicitudesAccordingToRole(UserContext.getUser());
     }
 
-    private List<SolicitudDTO> getSolicitudesAccordingToRole (User user, Role role) {
-        if (role == Role.USER) {
-            // Obtener las solicitudes del usuario logueado
-            return findAllSolicitudesByUser(user);
-        } else if (role == Role.MENTOR) {
-            // Obtener las solicitudes del área del usuario (mentor) logueado
-            return findAllSolicitudesByArea(user.getArea());
-        } else  {
-            // Obtener todas las solicitudes
-            return findAllSolicitudes();
+    private List<Solicitud> getSolicitudesAccordingToRole (User user) {
+
+        if (user.getRole() == Role.USER) {
+            return getAllSolicitudesByUser(user); // Get all solicitudes created by the logged user
+        } else if (user.getRole() == Role.MENTOR) {
+            return getAllSolicitudesByArea(user.getArea()); // Get all solicitudes from the same area of the logged Mentor's area
+        } else {
+            return getAllSolicitudes(); // Get all solicitudes (Admin)
         }
     }
 
-    private List<SolicitudDTO> findAllSolicitudesByUser (User user) {
-        return solicitudRepository.findAllByUserIdIs(user).stream()
-                .map(mapperUtils::mapperToSolicitudUserResponseDTO)
-                .collect(Collectors.toList());
+    private List<Solicitud> getAllSolicitudesByUser (User user) {
+        return solicitudRepository.findAllByUserIdIs(user);
     }
 
-    private List<SolicitudDTO> findAllSolicitudesByArea (Area area) {
-        return solicitudRepository.findAllByArea(area).stream()
-                .map(mapperUtils::mapperToSolicitudUserResponseDTO)
-                .collect(Collectors.toList());
+    private List<Solicitud> getAllSolicitudesByArea (Area area) {
+        return solicitudRepository.findAllByArea(area);
     }
 
-
-    private List<SolicitudDTO> findAllSolicitudes () {
-        return solicitudRepository.findAll().stream()
-                .map(mapperUtils::mapperToSolicitudUserResponseDTO)
-                .collect(Collectors.toList());
+    private List<Solicitud> getAllSolicitudes () {
+        return solicitudRepository.findAll();
     }
 
+    @LoggedUser
     @Override
-    public Optional<SolicitudDTO> getSolicitudById (Long id) throws IllegalAccessException {
-        User user = userUtils.getLoggedUser();
+    public Solicitud getSolicitudById (Long id) throws IllegalAccessException {
+        User user = UserContext.getUser();
         Role role = user.getRole();
-        Optional<Solicitud> solicitud = Optional.ofNullable(solicitudRepository.findById(id).orElseThrow(SolicitudNotExistsException::new));
-        if (role == Role.USER && user.getId().equals(solicitud.get().getUserId().getId()) ||
-                role == Role.MENTOR && solicitud.get().getArea()==user.getArea() ||
-                role== Role.ADMIN) {
-            return solicitud.map(mapperUtils::mapperToSolicitudUserResponseDTO);
-        } else  {
+        Solicitud solicitud = getSolicitudOrException(id);
+        if (role == Role.USER && user.getId().equals(solicitud.getUserId().getId()) ||
+                role == Role.MENTOR && solicitud.getArea() == user.getArea() ||
+                role == Role.ADMIN) {
+            return solicitud;
+        } else {
             throw new IllegalAccessException();
         }
     }
 
+    @LoggedUser
     @Override
-    public SolicitudDTO mentorUpdateSolicitud (Long id, UpdateMentorSolicitudDTO request) {
+    public Solicitud mentorUpdateSolicitud (Long id, UpdateMentorSolicitudDTO request) throws Exception {
         try {
-            Solicitud solicitud = solicitudRepository.findById(id).orElseThrow(SolicitudNotExistsException::new);
-            if(!solicitud.getStatus().equals(PENDIENTE_MENTOR)){
-                throw new IllegalStateException();
-            }
+            Solicitud solicitud = getSolicitudOrException(id);
+            checkValidSolicitudStatus(solicitud.getStatus(), PENDIENTE_MENTOR);
+            checkValidSolicitudMentorArea(solicitud.getArea());
             UpdateSolicitudFromMentorRequest(solicitud, request);
-            return mapperUtils.mapperToSolicitudUserResponseDTO(solicitudRepository.save(solicitud));
-        } catch (SolicitudNotExistsException e) {
-            logger.error(e.getMessage() + " - id=" + id);
-            throw new SolicitudNotExistsException();
-        } catch (IllegalStateException e) {
+            return solicitudRepository.save(solicitud);
+        } catch (SolicitudNotExistsException | IllegalStateException e) {
             logger.error(e.getMessage() + " - id=" + id);
             throw new IllegalStateException();
+        } catch (Exception e) {
+            logger.error(e.getMessage() + " - id=" + id);
+            throw new Exception(e);
         }
     }
 
+    @LoggedUser
     @Override
-    public SolicitudDTO userUpdateSolicitud (Long id, UpdateUserSolicitudDTO request) {
+    public Solicitud userUpdateSolicitud (Long id, UpdateUserSolicitudDTO request) throws Exception {
         try {
-            Solicitud solicitud = solicitudRepository.findById(id).orElseThrow(SolicitudNotExistsException::new);
-            if(!solicitud.getStatus().equals(PENDIENTE_USER)){
-                throw new IllegalStateException();
-            }
-            if(request.getStatus().equals(PENDIENTE_ADMIN)){
-                solicitud.setStatus(request.getStatus());
-            } else{
-                solicitud.setStatus(RECHAZADA);
-            }
-
-            return mapperUtils.mapperToSolicitudUserResponseDTO(solicitudRepository.save(solicitud));
-        } catch (SolicitudNotExistsException e) {
-            logger.error(e.getMessage() + " - id=" + id);
-            throw new SolicitudNotExistsException();
-        } catch (IllegalStateException e) {
+            Solicitud solicitud = getSolicitudOrException(id);
+            checkValidSolicitudStatus(solicitud.getStatus(), PENDIENTE_USER);
+            checkValidUser(solicitud.getUserId().getId());
+            handledSolicitudStatusUpdate(solicitud, request.getStatus(), PENDIENTE_ADMIN);
+            return solicitudRepository.save(solicitud);
+        } catch (SolicitudNotExistsException | IllegalStateException e) {
             logger.error(e.getMessage() + " - id=" + id);
             throw new IllegalStateException();
+        } catch (Exception e) {
+            logger.error(e.getMessage() + " - id=" + id);
+            throw new Exception(e);
         }
     }
 
+    @LoggedUser
     @Override
-    public SolicitudDTO adminUpdateSolicitud (Long id, UpdateAdminSolicitudDTO request) {
+    public Solicitud adminUpdateSolicitud (Long id, UpdateAdminSolicitudDTO request) throws Exception {
         try {
-            Solicitud solicitud = solicitudRepository.findById(id).orElseThrow(SolicitudNotExistsException::new);
-            if(!solicitud.getStatus().equals(PENDIENTE_ADMIN)){
-                throw new IllegalStateException();
-            }
-            if(request.getStatus().equals(APROBADA)){
-                solicitud.setStatus(request.getStatus());
-            } else{
-                solicitud.setStatus(RECHAZADA);
-            }
-            solicitud.setApprovedDate(LocalDateTime.now());
-            solicitud.setAdminId(userUtils.getLoggedUser());
-            solicitud.setEndDate(solicitud.getApprovedDate().plusDays(solicitud.getDays()));
-            return mapperUtils.mapperToSolicitudUserResponseDTO(solicitudRepository.save(solicitud));
-        } catch (SolicitudNotExistsException e) {
-            logger.error(e.getMessage() + " - id=" + id);
-            throw new SolicitudNotExistsException();
-        } catch (IllegalStateException e) {
+            Solicitud solicitud = getSolicitudOrException(id);
+            checkValidSolicitudStatus(solicitud.getStatus(), PENDIENTE_ADMIN);
+            UpdateSolicitudFromAdminRequest(solicitud, request);
+            return solicitudRepository.save(solicitud);
+        } catch (SolicitudNotExistsException | IllegalStateException e) {
             logger.error(e.getMessage() + " - id=" + id);
             throw new IllegalStateException();
+        } catch (Exception e) {
+            logger.error(e.getMessage() + " - id=" + id);
+            throw new Exception(e);
         }
     }
+
 
     private void UpdateSolicitudFromMentorRequest (Solicitud solicitud, UpdateMentorSolicitudDTO request) {
-        solicitud.setMentorId(userUtils.getLoggedUser());
+        solicitud.setMentorId(UserContext.getUser());
         solicitud.setMentorComment(request.getMentorComment());
         solicitud.setDays(request.getDays());
         solicitud.setLink(request.getLink());
-        if(request.getStatus().equals(PENDIENTE_USER)){
-            solicitud.setStatus(request.getStatus());
-        } else{
+        handledSolicitudStatusUpdate(solicitud, request.getStatus(), PENDIENTE_USER);
+    }
+
+
+    private void UpdateSolicitudFromAdminRequest (Solicitud solicitud, UpdateAdminSolicitudDTO request) {
+        solicitud.setApprovedDate(LocalDateTime.now());
+        solicitud.setAdminId(UserContext.getUser());
+        solicitud.setEndDate(solicitud.getApprovedDate().plusDays(solicitud.getDays()));
+        handledSolicitudStatusUpdate(solicitud, request.getStatus(), APROBADA);
+    }
+
+    private static void checkValidSolicitudStatus (Status solicitudStatus, Status expectedStatus) {
+        if (!solicitudStatus.equals(expectedStatus)) {
+            throw new IllegalStateException();
+        }
+    }
+
+    private void checkValidSolicitudMentorArea (Area area) {
+        if(!area.equals(UserContext.getUser().getArea())){
+            throw new IllegalStateException();
+        }
+    }
+
+    private void checkValidUser (Long userId) {
+        if(!userId.equals(UserContext.getUser().getId())){
+            throw new IllegalStateException();
+        }
+    }
+
+    private Solicitud getSolicitudOrException (Long id) {
+        return solicitudRepository.findById(id).orElseThrow(SolicitudNotExistsException::new);
+    }
+
+    private static void handledSolicitudStatusUpdate (Solicitud solicitud, Status requestStatus, Status expectedStatus) {
+        if (requestStatus.equals(expectedStatus)) {
+            solicitud.setStatus(requestStatus);
+        } else {
             solicitud.setStatus(RECHAZADA);
         }
     }
